@@ -3,6 +3,10 @@ const log = console.log
 const canvas = document.querySelector('.game-canvas');
 const c = canvas.getContext('2d');
 
+let lastKey = null
+let faceX = ''
+let faceY = ''
+
 class Overworld {
     constructor() {
         this.height = canvas.height
@@ -28,7 +32,7 @@ class Player {
             x: 0,
             y: 0,
         }
-        this.speed = 3.5
+        this.speed = 3
 
     }
     draw() {
@@ -43,26 +47,17 @@ class Player {
 }
 
 class Projectile {
-    constructor() {
-        this.size = {
-            width: 15,
-            height: 15,
-        }
-        this.position = {
-            x: hero.position.x + 40,
-            y: hero.position.y + 16
-        }
-        this.velocity = {
-            x: 0,
-            y: 0,
-        }
-        this.speed = 4
-        this.distance = 300
+    constructor({ position, velocity }) {
+        this.width = 15
+        this.height = 15
+        this.position = position
+        this.velocity = velocity
+
     }
     draw() {
         log('fire')
         c.fillStyle = 'red';
-        c.fillRect(this.position.x, this.position.y, this.size.width, this.size.height)
+        c.fillRect(this.position.x, this.position.y, this.width, this.height)
     }
     update() {
         this.draw();
@@ -71,10 +66,25 @@ class Projectile {
     }
 }
 
+class Melee {
+    constructor() {
+        this.width = 10
+        this.height = 30
+        this.position = {
+            x: hero.position.x,
+            y: hero.position.y
+        }
+    }
+    attack() {
+        c.fillStyle = 'black'
+        c.fillRect(this.position.x, this.position.y, this.width, this.height)
+    }
+}
+
 let hero = new Player;
 let level1 = new Overworld;
-let fireball = new Projectile;
-let casting = false
+let projectiles = []
+let sword = new Melee
 
 
 
@@ -83,6 +93,9 @@ const animate = () => {
     c.clearRect(0, 0, canvas.width, canvas.height)
     level1.draw()
     hero.update()
+    projectiles.forEach(projectile => {
+        projectile.update()
+    })
 
     hero.velocity.x = 0
     hero.velocity.y = 0
@@ -98,6 +111,11 @@ const animate = () => {
     } else {
         hero.velocity.x = 0, hero.velocity.y = 0
     }
+
+    if (keys.slash.pressed) {
+        sword.attack()
+
+    }
 }
 
 const keys = {
@@ -112,9 +130,13 @@ const keys = {
     },
     down: {
         pressed: false
+    },
+    slash: {
+        pressed: false
     }
 }
-let lastKey = ''
+
+
 
 animate()
 
@@ -125,22 +147,46 @@ addEventListener('keydown', ({ key }) => {
         case 'w':
             keys.up.pressed = true;
             lastKey = 'w'
+            faceY = -5
+            faceX = 0
             break;
         case 'a':
             keys.left.pressed = true;
             lastKey = 'a'
+            faceY = 0
+            faceX = -5
             break;
         case 's':
             keys.down.pressed = true;
             lastKey = 's'
+            faceY = 5
+            faceX = 0
             break;
         case 'd':
             keys.right.pressed = true;
             lastKey = 'd'
+            faceY = 0
+            faceX = 5
+            break;
+        case 'f':
+            keys.slash.pressed = true;
             break;
         case ' ':
-            casting = true
-            log(casting)
+            if (lastKey = null) {
+                faceY = 0
+                faceX = 5
+            }
+            log('fire')
+            projectiles.push(new Projectile({
+                position: {
+                    x: hero.position.x,
+                    y: hero.position.y
+                },
+                velocity: {
+                    x: faceX,
+                    y: faceY
+                }
+            }))
             break;
     }
 })
@@ -158,10 +204,8 @@ addEventListener('keyup', ({ key }) => {
         case 'd':
             keys.right.pressed = false;
             break;
-        case ' ':
-            casting = false
-            log(casting)
+        case 'f':
+            keys.slash.pressed = false;
             break;
-
     }
 })
