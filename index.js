@@ -21,8 +21,8 @@ class Player {
             height: 64
         }
         this.position = {
-            x: 100,
-            y: 100
+            x: 300,
+            y: 300
         }
         this.velocity = {
             x: 0,
@@ -32,18 +32,50 @@ class Player {
 
     }
     draw() {
-        c.fillStyle = 'green'
-        c.fillRect(this.position.x, this.position.y, this.size.width, this.size.height)
+        c.fillStyle = 'green';
+        c.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
     }
     update() {
-        this.draw()
-        this.position.y += this.velocity.y
-        this.position.x += this.velocity.x
+        this.draw();
+        this.position.y += this.velocity.y;
+        this.position.x += this.velocity.x;
     }
 }
 
-let hero = new Player
-let level1 = new Overworld
+class Projectile {
+    constructor() {
+        this.size = {
+            width: 15,
+            height: 15,
+        }
+        this.position = {
+            x: hero.position.x + 40,
+            y: hero.position.y + 16
+        }
+        this.velocity = {
+            x: 0,
+            y: 0,
+        }
+        this.speed = 4
+        this.distance = 300
+    }
+    draw() {
+        log('fire')
+        c.fillStyle = 'red';
+        c.fillRect(this.position.x, this.position.y, this.size.width, this.size.height)
+    }
+    update() {
+        this.draw();
+        this.position.y += this.velocity.y;
+        this.position.x += this.velocity.x;
+    }
+}
+
+let hero = new Player;
+let level1 = new Overworld;
+let fireball = new Projectile;
+let casting = false
+
 
 
 const animate = () => {
@@ -51,6 +83,7 @@ const animate = () => {
     c.clearRect(0, 0, canvas.width, canvas.height)
     level1.draw()
     hero.update()
+
     hero.velocity.x = 0
     hero.velocity.y = 0
 
@@ -85,6 +118,8 @@ let lastKey = ''
 
 animate()
 
+
+
 addEventListener('keydown', ({ key }) => {
     switch (key) {
         case 'w':
@@ -103,6 +138,10 @@ addEventListener('keydown', ({ key }) => {
             keys.right.pressed = true;
             lastKey = 'd'
             break;
+        case ' ':
+            casting = true
+            log(casting)
+            break;
     }
 })
 addEventListener('keyup', ({ key }) => {
@@ -119,5 +158,10 @@ addEventListener('keyup', ({ key }) => {
         case 'd':
             keys.right.pressed = false;
             break;
+        case ' ':
+            casting = false
+            log(casting)
+            break;
+
     }
 })
