@@ -17,7 +17,7 @@ class Overworld {
 }
 
 class Character {
-    constructor({ position }) {
+    constructor({ position, color }) {
         this.hitpoints = 10
         this.isAlive = true
         this.width = 32
@@ -32,23 +32,26 @@ class Character {
             position: this.position,
             width: 70,
             height: 32,
-            damage: 1,
+            damage: 2,
             knockback: 60
         }
+        this.color = color
         this.isAttacking = false
         this.faceDirection = {
-            facing: '',
+            facing: 'east',
             x: 5,
             y: 0
         }
     }
     draw() {
-        c.fillStyle = 'green';
+        c.fillStyle = this.color;
         c.fillRect(this.position.x, this.position.y, this.width, this.height);
+
+        //this determines where to put the attackbox based off which direction the hero is facing
         if (this.isAttacking) {
             c.fillStyle = 'grey'
             switch (hero.faceDirection.facing) {
-                case 'east':
+                case 'east' || ' ':
                     c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
                     break;
                 case 'west':
@@ -115,19 +118,22 @@ let hero = new Character({
     position: {
         x: 300,
         y: 300,
-    }
+    },
+    color: 'green'
 });
 let enemy1 = new Character({
     position: {
         x: 600,
         y: 300
     },
+    color: 'red'
 });
 let enemy2 = new Character({
     position: {
         x: 800,
         y: 400
-    }
+    },
+    color: 'purple'
 })
 let level1 = new Overworld;
 let projectiles = []
@@ -171,10 +177,24 @@ const animate = () => {
                     npc.position.y = npc.position.y + hero.attackBox.knockback;
                     break;
             }
-
         }
 
         //sword swing hitbox
+        switch (hero.faceDirection.facing) {
+            case 'east' || ' ':
+                hero.attackBox.position.x, hero.attackBox.position.y, hero.attackBox.width, hero.attackBox.height
+
+                break;
+            case 'west':
+                attackingLeft = hero.attackBox.position.x - hero.width - 6;
+                break;
+            case 'north':
+                attackingUp = hero.attackBox.position.y - hero.attackBox.height * 1.5;
+                break;
+            case 'south':
+                attackDown = hero.attackBox.position.y + hero.attackBox.height * 1.5;
+                break;
+        }
         if (hero.attackBox.position.y <= npc.position.y + npc.height &&
             hero.attackBox.position.y + hero.attackBox.height >= npc.position.y &&
             hero.attackBox.position.x + hero.attackBox.width >= npc.position.x &&
@@ -184,9 +204,9 @@ const animate = () => {
             npc.hitpoints = npc.hitpoints - hero.attackBox.damage
             npc.position.x = npc.position.x + hero.attackBox.knockback
             hero.isAttacking = false
-
-            //projectiles stop at and damage npcs
-        } projectiles.forEach((projectile, i) => {
+        }
+        //projectiles stop at and damage npcs
+        projectiles.forEach((projectile, i) => {
             if (projectile.position.y + projectile.velocity.y <= npc.position.y + npc.height &&
                 projectile.position.y + projectile.velocity.y + projectile.height >= npc.position.y &&
                 projectile.position.x + projectile.velocity.x + projectile.width >= npc.position.x &&
@@ -221,10 +241,6 @@ const animate = () => {
         hero.velocity.x = 0, hero.velocity.y = 0
     }
 
-    if (keys.slash.pressed) {
-
-
-    }
 }
 
 const keys = {
@@ -313,9 +329,6 @@ addEventListener('keyup', ({ key }) => {
             break;
         case 'd':
             keys.right.pressed = false;
-            break;
-        case ' ':
-            keys.slash.pressed = false;
             break;
     }
 })
