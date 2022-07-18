@@ -3,7 +3,7 @@ const log = console.log
 const canvas = document.querySelector('.game-canvas');
 const c = canvas.getContext('2d');
 
-let lastKey = null
+let lastKey = ''
 let faceX = ''
 let faceY = ''
 
@@ -18,31 +18,44 @@ class Overworld {
     }
 }
 
-class Player {
-    constructor() {
-        this.size = {
-            width: 32,
-            height: 64
-        }
-        this.position = {
-            x: 300,
-            y: 300
-        }
+class Character {
+    constructor({ position }) {
+        this.width = 32
+        this.height = 64
+        this.position = position
         this.velocity = {
             x: 0,
             y: 0,
         }
         this.speed = 3
+        this.attackBox = {
+            position: this.position,
+            width: 64,
+            height: 32,
+
+        }
+        this.isAttacking = false
 
     }
     draw() {
         c.fillStyle = 'green';
-        c.fillRect(this.position.x, this.position.y, this.size.width, this.size.height);
+        c.fillRect(this.position.x, this.position.y, this.width, this.height);
+        if (this.isAttacking) {
+            c.fillStyle = 'grey'
+            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+        }
     }
     update() {
         this.draw();
         this.position.y += this.velocity.y;
         this.position.x += this.velocity.x;
+    }
+    attack() {
+        this.isAttacking = true
+        setTimeout(() => {
+            this.isAttacking = false
+        }, 100)
+
     }
 }
 
@@ -55,7 +68,6 @@ class Projectile {
 
     }
     draw() {
-        log('fire')
         c.fillStyle = 'red';
         c.fillRect(this.position.x, this.position.y, this.width, this.height)
     }
@@ -66,25 +78,23 @@ class Projectile {
     }
 }
 
-class Melee {
-    constructor() {
-        this.width = 10
-        this.height = 30
-        this.position = {
-            x: hero.position.x,
-            y: hero.position.y
-        }
-    }
-    attack() {
-        c.fillStyle = 'black'
-        c.fillRect(this.position.x, this.position.y, this.width, this.height)
-    }
-}
 
-let hero = new Player;
+let hero = new Character({
+    position: {
+        x: 300,
+        y: 300,
+    }
+});
+let enemy = new Character({
+    position: {
+        x: 600,
+        y: 300
+    }
+
+});
 let level1 = new Overworld;
 let projectiles = []
-let sword = new Melee
+
 
 
 
@@ -92,13 +102,36 @@ const animate = () => {
     requestAnimationFrame(animate)
     c.clearRect(0, 0, canvas.width, canvas.height)
     level1.draw()
-    hero.update()
-    projectiles.forEach(projectile => {
-        projectile.update()
-    })
 
+    if (hero.position.y + hero.velocity.y <= enemy.position.y + enemy.height &&
+        hero.position.y + hero.velocity.y + hero.height >= enemy.position.y &&
+        hero.position.x + hero.velocity.x + hero.width >= enemy.position.x &&
+        hero.position.x + hero.velocity.x <= enemy.position.x + enemy.width
+    ) {
+        log('hit')
+        hero.velocity.x = 0
+        hero.velocity.y = 0
+    }
+
+    enemy.update()
+
+    hero.update()
     hero.velocity.x = 0
     hero.velocity.y = 0
+    projectiles.forEach((projectile, i) => {
+        if (projectile.position.y + projectile.velocity.y <= enemy.position.y + enemy.height &&
+            projectile.position.y + projectile.velocity.y + projectile.height >= enemy.position.y &&
+            projectile.position.x + projectile.velocity.x + projectile.width >= enemy.position.x &&
+            projectile.position.x + projectile.velocity.x <= enemy.position.x + enemy.width
+        ) {
+            log('hit')
+            projectile.velocity.x = 0
+            projectile.velocity.y = 0
+            projectiles.splice(i, 1)
+
+        }
+        projectile.update()
+    })
 
     if (keys.right.pressed && lastKey === 'd') {
         hero.velocity.x = hero.speed;
@@ -113,7 +146,7 @@ const animate = () => {
     }
 
     if (keys.slash.pressed) {
-        sword.attack()
+
 
     }
 }
@@ -169,7 +202,7 @@ addEventListener('keydown', ({ key }) => {
             faceX = 5
             break;
         case 'f':
-            keys.slash.pressed = true;
+            hero.attack()
             break;
         case ' ':
             if (lastKey = null) {
