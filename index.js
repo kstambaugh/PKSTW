@@ -4,8 +4,6 @@ const canvas = document.querySelector('.game-canvas');
 const c = canvas.getContext('2d');
 
 let lastKey = ''
-let faceX = ''
-let faceY = ''
 
 class Overworld {
     constructor() {
@@ -20,6 +18,8 @@ class Overworld {
 
 class Character {
     constructor({ position }) {
+        this.hitpoints = 10
+        this.isAlive = true
         this.width = 32
         this.height = 64
         this.position = position
@@ -30,12 +30,17 @@ class Character {
         this.speed = 3
         this.attackBox = {
             position: this.position,
-            width: 64,
+            width: 70,
             height: 32,
-
+            damage: 1,
+            knockback: 60
         }
         this.isAttacking = false
-
+        this.faceDirection = {
+            facing: '',
+            x: 5,
+            y: 0
+        }
     }
     draw() {
         c.fillStyle = 'green';
@@ -55,7 +60,18 @@ class Character {
         setTimeout(() => {
             this.isAttacking = false
         }, 100)
-
+    }
+    firebolt() {
+        projectiles.push(new Projectile({
+            position: {
+                x: hero.position.x,
+                y: hero.position.y
+            },
+            velocity: {
+                x: this.faceDirection.x,
+                y: this.faceDirection.y
+            }
+        }))
     }
 }
 
@@ -65,7 +81,7 @@ class Projectile {
         this.height = 15
         this.position = position
         this.velocity = velocity
-
+        this.damage = 1
     }
     draw() {
         c.fillStyle = 'red';
@@ -85,51 +101,96 @@ let hero = new Character({
         y: 300,
     }
 });
-let enemy = new Character({
+let enemy1 = new Character({
     position: {
         x: 600,
         y: 300
+    },
+});
+enemy1.velocity.x = -1
+enemy1.speed = 1
+
+let enemy2 = new Character({
+    position: {
+        x: 800,
+        y: 400
     }
 
-});
+})
 let level1 = new Overworld;
 let projectiles = []
-
-
-
+let enemies = []
+enemies.push(enemy1, enemy2)
 
 const animate = () => {
     requestAnimationFrame(animate)
     c.clearRect(0, 0, canvas.width, canvas.height)
     level1.draw()
 
-    if (hero.position.y + hero.velocity.y <= enemy.position.y + enemy.height &&
-        hero.position.y + hero.velocity.y + hero.height >= enemy.position.y &&
-        hero.position.x + hero.velocity.x + hero.width >= enemy.position.x &&
-        hero.position.x + hero.velocity.x <= enemy.position.x + enemy.width
-    ) {
-        log('hit')
-        hero.velocity.x = 0
-        hero.velocity.y = 0
-    }
-
-    enemy.update()
-
-    hero.update()
-    hero.velocity.x = 0
-    hero.velocity.y = 0
-    projectiles.forEach((projectile, i) => {
-        if (projectile.position.y + projectile.velocity.y <= enemy.position.y + enemy.height &&
-            projectile.position.y + projectile.velocity.y + projectile.height >= enemy.position.y &&
-            projectile.position.x + projectile.velocity.x + projectile.width >= enemy.position.x &&
-            projectile.position.x + projectile.velocity.x <= enemy.position.x + enemy.width
+    enemies.forEach((npc, i) => {
+        npc.update()
+        if (npc.hitpoints <= 0) {
+            npc.isAlive = false
+            shotCount = 0
+            enemies.splice(i, 1)
+        }
+        //hero doesn't walk through npcs
+        if (hero.position.y + hero.velocity.y / 2 <= npc.position.y + npc.height &&
+            hero.position.y + hero.velocity.y / 2 + hero.height >= npc.position.y &&
+            hero.position.x + hero.velocity.x / 2 + hero.width >= npc.position.x &&
+            hero.position.x + hero.velocity.x / 2 <= npc.position.x + npc.width
         ) {
-            log('hit')
-            projectile.velocity.x = 0
-            projectile.velocity.y = 0
-            projectiles.splice(i, 1)
+            //if hero and npc do collide, pushes them way from eachother in opposite direction of heros movement
+            switch (hero.faceDirection.facing) {
+                case 'east':
+                    hero.position.x = hero.position.x - hero.attackBox.knockback;
+                    npc.position.x = npc.position.x + hero.attackBox.knockback;
+                    break;
+                case 'west':
+                    hero.position.x = hero.position.x + hero.attackBox.knockback;
+                    npc.position.x = npc.position.x - hero.attackBox.knockback;
+                case 'north':
+                    hero.position.y = hero.position.y + hero.attackBox.knockback;
+                    npc.position.y = npc.position.y - hero.attackBox.knockback;
+                case 'south':
+                    hero.position.y = hero.position.y - hero.attackBox.knockback;
+                    npc.position.y = npc.position.y + hero.attackBox.knockback;
+            }
 
         }
+
+        //sword swing hitbox
+        if (hero.attackBox.position.y <= npc.position.y + npc.height &&
+            hero.attackBox.position.y + hero.attackBox.height >= npc.position.y &&
+            hero.attackBox.position.x + hero.attackBox.width >= npc.position.x &&
+            hero.attackBox.position.x <= npc.position.x + npc.width && hero.isAttacking
+        ) {
+            log('hit')
+            npc.hitpoints = npc.hitpoints - hero.attackBox.damage
+            npc.position.x = npc.position.x + hero.attackBox.knockback
+            hero.isAttacking = false
+
+            //projectiles stop at and damage npcs
+        } projectiles.forEach((projectile, i) => {
+            if (projectile.position.y + projectile.velocity.y <= npc.position.y + npc.height &&
+                projectile.position.y + projectile.velocity.y + projectile.height >= npc.position.y &&
+                projectile.position.x + projectile.velocity.x + projectile.width >= npc.position.x &&
+                projectile.position.x + projectile.velocity.x <= npc.position.x + npc.width
+            ) {
+                if (npc.isAlive) {
+                    npc.hitpoints = npc.hitpoints - projectile.damage
+                    projectiles.splice(i, 1)
+                }
+            }
+        })
+
+    })
+    hero.update()
+
+    hero.velocity.x = 0
+    hero.velocity.y = 0
+
+    projectiles.forEach((projectile, i) => {
         projectile.update()
     })
 
@@ -175,51 +236,52 @@ animate()
 
 
 
+
+
 addEventListener('keydown', ({ key }) => {
+    log(hero.faceDirection.facing)
     switch (key) {
         case 'w':
             keys.up.pressed = true;
             lastKey = 'w'
-            faceY = -5
-            faceX = 0
+            hero.faceDirection = {
+                facing: 'north',
+                y: -5,
+                x: 0
+            }
             break;
         case 'a':
             keys.left.pressed = true;
             lastKey = 'a'
-            faceY = 0
-            faceX = -5
+            hero.faceDirection = {
+                facing: 'west',
+                y: 0,
+                x: -5
+            }
             break;
         case 's':
             keys.down.pressed = true;
             lastKey = 's'
-            faceY = 5
-            faceX = 0
+            hero.faceDirection = {
+                facing: 'south',
+                y: 5,
+                x: 0
+            }
             break;
         case 'd':
             keys.right.pressed = true;
             lastKey = 'd'
-            faceY = 0
-            faceX = 5
-            break;
-        case 'f':
-            hero.attack()
+            hero.faceDirection = {
+                facing: 'east',
+                y: 0,
+                x: 5
+            }
             break;
         case ' ':
-            if (lastKey = null) {
-                faceY = 0
-                faceX = 5
-            }
-            log('fire')
-            projectiles.push(new Projectile({
-                position: {
-                    x: hero.position.x,
-                    y: hero.position.y
-                },
-                velocity: {
-                    x: faceX,
-                    y: faceY
-                }
-            }))
+            hero.attack()
+            break;
+        case 'f':
+            hero.firebolt()
             break;
     }
 })
@@ -237,7 +299,7 @@ addEventListener('keyup', ({ key }) => {
         case 'd':
             keys.right.pressed = false;
             break;
-        case 'f':
+        case ' ':
             keys.slash.pressed = false;
             break;
     }
