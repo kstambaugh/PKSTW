@@ -47,7 +47,23 @@ class Character {
         c.fillRect(this.position.x, this.position.y, this.width, this.height);
         if (this.isAttacking) {
             c.fillStyle = 'grey'
-            c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+            switch (hero.faceDirection.facing) {
+                case 'east':
+                    c.fillRect(this.attackBox.position.x, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+                    break;
+                case 'west':
+                    let attackLeft = this.attackBox.position.x - this.width - 6;
+                    c.fillRect(attackLeft, this.attackBox.position.y, this.attackBox.width, this.attackBox.height)
+                    break;
+                case 'north':
+                    let attackUp = this.attackBox.position.y - this.attackBox.height * 1.5;
+                    c.fillRect(this.attackBox.position.x, attackUp, this.attackBox.height, this.attackBox.width,)
+                    break;
+                case 'south':
+                    let attackDown = this.attackBox.position.y + this.attackBox.height * 1.5;
+                    c.fillRect(this.attackBox.position.x, attackDown, this.attackBox.height, this.attackBox.width,)
+                    break;
+            }
         }
     }
     update() {
@@ -107,15 +123,11 @@ let enemy1 = new Character({
         y: 300
     },
 });
-enemy1.velocity.x = -1
-enemy1.speed = 1
-
 let enemy2 = new Character({
     position: {
         x: 800,
         y: 400
     }
-
 })
 let level1 = new Overworld;
 let projectiles = []
@@ -149,12 +161,15 @@ const animate = () => {
                 case 'west':
                     hero.position.x = hero.position.x + hero.attackBox.knockback;
                     npc.position.x = npc.position.x - hero.attackBox.knockback;
+                    break;
                 case 'north':
                     hero.position.y = hero.position.y + hero.attackBox.knockback;
                     npc.position.y = npc.position.y - hero.attackBox.knockback;
+                    break;
                 case 'south':
                     hero.position.y = hero.position.y - hero.attackBox.knockback;
                     npc.position.y = npc.position.y + hero.attackBox.knockback;
+                    break;
             }
 
         }
